@@ -60,4 +60,41 @@ router.get('/me', authenticateJwt, async (req,res)=>{
     res.status(200).json(existingUser);
 });
 
+router.post('/signup', async (req, res) => {
+    const { username, firstName, lastName, password } = req.body;
+    const existingUser = await Users.findOne({ username });
+    if (existingUser) {
+        res.status(401).send('existing admin');
+    } else {
+        const newUser = new Users({
+            username,
+            firstName,
+            lastName,
+            password,
+        });
+        await newUser.save();
+        const token = createToken(newUser);
+        res.json({
+            message: 'User created successfully',
+            token,
+        });
+    }
+});
+
+router.post('/login', async (req, res) => {
+    const { username, password } = req.body;
+    const existingUser = await Users.findOne({ username:username, password:password });
+    if (existingUser) {
+        const token = createToken(existingUser);
+        req.headers["username"] = username;
+        res.json({
+            message: 'Logged in successfully',
+            userId: existingUser._id,
+            token,
+        });
+    } else {
+        res.status(401).send('Invalid credentials');
+    }
+});
+
 export default router;
